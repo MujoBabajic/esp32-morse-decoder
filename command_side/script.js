@@ -18,7 +18,6 @@ const db = getDatabase();
 // Load Theme from LocalStorage
 if (localStorage.getItem("darkMode") === "enabled") {
   document.body.classList.add("dark-mode");
-  themeToggle.innerText = "☀️";
 }
 
 // Toggle Dark Mode
@@ -27,10 +26,8 @@ themeToggle.addEventListener("click", () => {
 
   if (document.body.classList.contains("dark-mode")) {
     localStorage.setItem("darkMode", "enabled");
-    themeToggle.innerText = "☀️";
   } else {
     localStorage.setItem("darkMode", "disabled");
-    themeToggle.innerText = "🌙";
   }
 });
 
