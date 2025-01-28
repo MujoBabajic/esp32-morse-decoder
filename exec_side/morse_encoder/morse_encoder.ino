@@ -1,17 +1,22 @@
 #include <WiFi.h>
-#include <WebServer.h>
-#include <ArduinoJson.h>
+#include <Firebase_ESP_Client.h>
+#include <addons/TokenHelper.h>
+#include <addons/RTDBHelper.h>
+#include <project_config.h>
 
-const char* ssid = "jomu"; // Name of wifi network
-const char* password = "123qweasd"; // Network password
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
+bool signupOK = false;
 
-WebServer server(80); // Server on port 80
+unsigned long lastCheckTime = 0;
+String lastMessage = "";  // Store the last processed message
 
 #define BUZZER_PIN 12
 #define RED_DIODE_PIN 25
 #define GREEN_DIODE_PIN 13
-#define BUZZER_FREQ 800 // Hz
-#define SHORT_BEEP 20 // Miliseconds
+#define BUZZER_FREQ 800  // Hz
+#define SHORT_BEEP 20  // Milliseconds
 #define LONG_BEEP 200
 
 struct Morse {
@@ -27,7 +32,7 @@ Morse morseAlphabet[] = {
   {'U', "..-"},  {'V', "...-"}, {'W', ".--"},  {'X', "-..-"}, {'Y', "-.--"},
   {'Z', "--.."}, {'1', ".----"},{'2', "..---"},{'3', "...--"},{'4', "....-"},
   {'5', "....."},{'6', "-...."},{'7', "--..."},{'8', "---.."},{'9', "----."},
-  {'0', "-----"},{' ', " "}
+  {'0', "-----"},{' ', "/"}
 };
 
 String convertToMorse(String text) {
@@ -39,7 +44,7 @@ String convertToMorse(String text) {
     for (Morse m : morseAlphabet) {
       if (m.letter == c) {
         morseMessage += m.code;
-        morseMessage += " "; // Space between letters
+        morseMessage += " ";  // Space between letters
         break;
       }
     }
@@ -48,7 +53,6 @@ String convertToMorse(String text) {
 }
 
 void playMorse(String morse) {
-  // LED and buzzer are active for 2 seconds to indicate that the morse is ready
   digitalWrite(GREEN_DIODE_PIN, HIGH);
   tone(BUZZER_PIN, BUZZER_FREQ);
   delay(2000);
@@ -56,7 +60,6 @@ void playMorse(String morse) {
   digitalWrite(GREEN_DIODE_PIN, LOW);
   delay(1000);
 
-  // Playing the morse code
   for (int i = 0; i < morse.length(); i++) {
     char symbol = morse[i];
     if (symbol == '.') {
@@ -72,86 +75,111 @@ void playMorse(String morse) {
       noTone(BUZZER_PIN);
       digitalWrite(GREEN_DIODE_PIN, LOW);
     }
-    delay(100); // Pause between signals
+    delay(100);  // Pause between signals
   }
 }
 
-void handleReceive() {
-    if (server.method() == HTTP_OPTIONS) {
-        // Respond to preflight request
-        server.sendHeader("Access-Control-Allow-Origin", "*");
-        server.sendHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-        server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
-        server.send(204);
-        return;
-    }
+void checkFirebaseForNewMessage() {
+  if (Firebase.RTDB.getJSON(&fbdo, "/")) {  // Fetch entire JSON structure
+    Serial.println("Received JSON from Firebase:");
+    Serial.println(fbdo.to<FirebaseJson>().raw());  // Print entire JSON for debugging
 
-    if (server.method() == HTTP_POST) {
-        String message = server.arg("plain");
-        Serial.print("JSON body: ");
-        Serial.println(message);
+    FirebaseJson json = fbdo.to<FirebaseJson>();
 
-        StaticJsonDocument<200> doc;
-        DeserializationError error = deserializeJson(doc, message);
-        if (error) {
-            Serial.println("JSON Parsing failed!");
-            server.send(400, "text/plain", "Invalid JSON");
-            return;
+    FirebaseJsonData jsonData;
+    String latestKey = "";
+    String latestTimestamp = "";
+    String latestMessage = "";
+
+    size_t count = json.iteratorBegin();
+    Serial.print("Number of entries: ");
+    Serial.println(count);
+
+    for (size_t i = 0; i < count; i++) {
+      int type = 0;
+      String key, value;
+      json.iteratorGet(i, type, key, value);
+
+      Serial.print("Checking key: ");
+      Serial.println(key);
+
+      FirebaseJsonData messageData;
+      FirebaseJsonData timestampData;
+
+      // Extract the message and timestamp
+      if (json.get(messageData, key + "/message") && json.get(timestampData, key + "/timestamp")) {
+        Serial.print("Found message: ");
+        Serial.println(messageData.stringValue);
+        Serial.print("Found timestamp: ");
+        Serial.println(timestampData.stringValue);
+
+        // Compare timestamps to find the latest message
+        if (timestampData.stringValue > latestTimestamp) {
+          latestTimestamp = timestampData.stringValue;
+          latestMessage = messageData.stringValue;
+          latestKey = key;
         }
-
-        String receivedText = doc["message"].as<String>();
-        Serial.print("Received message: ");
-        Serial.println(receivedText);
-
-        // Send response with CORS headers
-        server.sendHeader("Access-Control-Allow-Origin", "*");
-        server.send(200, "text/plain", "Message received!");
-
-        String morseMessage = convertToMorse(receivedText);
-        Serial.print("Morse: ");
-        Serial.println(morseMessage);
-
-        playMorse(morseMessage);
-    } else {
-        server.send(405, "text/plain", "Method Not Allowed");
+      }
     }
-}
+    json.iteratorEnd();
 
-void handleOptions() {
-    server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.sendHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
-    server.send(204);
+    if (latestMessage != "" && latestMessage != lastMessage) {
+      Serial.print("New message received: ");
+      Serial.println(latestMessage);
+
+      lastMessage = latestMessage;
+
+      String morseCode = convertToMorse(latestMessage);
+      Serial.print("Converted to Morse: ");
+      Serial.println(morseCode);
+
+      playMorse(morseCode);
+    }
+  } else {
+    Serial.print("Firebase error: ");
+    Serial.println(fbdo.errorReason());
+  }
 }
 
 void setup() {
-    Serial.begin(115200);
+  Serial.begin(115200);
 
-    pinMode(BUZZER_PIN, OUTPUT);
-    pinMode(RED_DIODE_PIN, OUTPUT);
-    pinMode(GREEN_DIODE_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(RED_DIODE_PIN, OUTPUT);
+  pinMode(GREEN_DIODE_PIN, OUTPUT);
 
-    // WiFi connection setup
-    WiFi.begin(ssid, password);
-    Serial.print("Connecting to ");
-    Serial.println(ssid);
+  WiFi.begin(SSID, PASSWORD);
+  Serial.print("Connecting to ");
+  Serial.println(SSID);
 
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
 
-    Serial.println("\nConnected to WiFi!");
-    Serial.print("ESP32 IP: ");
-    Serial.println(WiFi.localIP());
+  Serial.print("\nConnected to ");
+  Serial.println(SSID);
 
-    // Run handleReceive function when a POST request arrives to /receive endpoint
-    server.on("/receive", HTTP_POST, handleReceive);
-    server.on("/receive", HTTP_OPTIONS, handleOptions); // Handle CORS preflight
+  config.api_key = API_KEY;
+  config.database_url = DATABASE_URL;
 
-    server.begin();
+  if (Firebase.signUp(&config, &auth, "", "")) {
+    Serial.println("Connected to Firebase");
+    signupOK = true;
+  } else {
+    Serial.println("Firebase Sign-Up Failed");
+    Serial.println(fbdo.errorReason());
+  }
+
+  config.token_status_callback = tokenStatusCallback;
+
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
 }
 
 void loop() {
-    server.handleClient();
+  if (Firebase.ready() && millis() - lastCheckTime > 5000) {  // Check Firebase every 5 seconds
+    lastCheckTime = millis();
+    checkFirebaseForNewMessage();
+  }
 }
