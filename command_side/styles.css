@@ -16,12 +16,18 @@ body {
     text-align: center;
   }
   input[type="text"] {
-    width: 90%;
+    width: 100%;
     padding: 10px;
-    margin-bottom: 15px;
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 16px;
+  }
+  #validationText{
+    color: red;
+    width: 100%;
+    text-align: left;
+    margin: 5px 0px 10px 3px;
+    font-size: 14px;
   }
   button {
     padding: 10px 20px;
