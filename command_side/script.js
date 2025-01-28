@@ -4,18 +4,37 @@ import {
   ref,
   set,
 } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
-import {firebaseConfig} from "./firebase_config.js";
+import { firebaseConfig } from "./firebase_config.js";
 
 const textInput = document.getElementById("textInput");
 const sendBtn = document.getElementById("sendBtn");
 const validationText = document.getElementById("validationText");
+const themeToggle = document.getElementById("themeToggle");
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase();
 
-function validateInput(input){
-  // Regex for input validation
+// Load Theme from LocalStorage
+if (localStorage.getItem("darkMode") === "enabled") {
+  document.body.classList.add("dark-mode");
+  themeToggle.innerText = "☀️";
+}
+
+// Toggle Dark Mode
+themeToggle.addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+
+  if (document.body.classList.contains("dark-mode")) {
+    localStorage.setItem("darkMode", "enabled");
+    themeToggle.innerText = "☀️";
+  } else {
+    localStorage.setItem("darkMode", "disabled");
+    themeToggle.innerText = "🌙";
+  }
+});
+
+function validateInput(input) {
   const validationPattern = /^[a-zA-Z0-9 ]*$/;
 
   if (!input.value || !validationPattern.test(input.value)) {
@@ -37,25 +56,15 @@ function validateInput(input){
 }
 
 // Creating a timestamp for the message
-function createTimestamp(){
+function createTimestamp() {
   const date = new Date();
-  const timestamp = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}${String(date.getDate()).padStart(2, "0")}${String(date.getHours()).padStart(
-    2,
-    "0"
-  )}${String(date.getMinutes()).padStart(2, "0")}${String(
-    date.getSeconds()
-  ).padStart(2, "0")}`;
-
-  return timestamp;
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}${String(date.getHours()).padStart(2, "0")}${String(date.getMinutes()).padStart(2, "0")}${String(date.getSeconds()).padStart(2, "0")}`;
 }
 
 function insertData() {
-  textInput.value=textInput.value.trim();
+  textInput.value = textInput.value.trim();
 
-  if(!validateInput(textInput)){
+  if (!validateInput(textInput)) {
     return;
   }
 

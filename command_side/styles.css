@@ -1,43 +1,99 @@
+:root {
+  --bg-color: #f0f0f0;
+  --text-color: #000;
+  --container-bg: white;
+  --button-bg: #007BFF;
+  --button-hover: #0056b3;
+}
+
+.dark-mode {
+  --bg-color: #121212;
+  --text-color: #fff;
+  --container-bg: #1e1e1e;
+  --button-bg: #ff9800;
+  --button-hover: #e68a00;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #f0f0f0;
-  }
-  .container {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    text-align: center;
-  }
-  input[type="text"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 16px;
-  }
-  #validationText{
-    color: red;
-    width: 100%;
-    text-align: left;
-    margin: 5px 0px 10px 3px;
-    font-size: 14px;
-  }
-  button {
-    padding: 10px 20px;
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  button:hover {
-    background-color: #0056b3;
-  }
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.container {
+  background: var(--container-bg);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  height: 13em;
+  width: 22em;
+}
+
+#titleSpan{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#title{
+  text-align: left;
+  width: 80%;
+}
+
+#themeToggle {
+  background: none;
+  border-radius: 50px;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-color);
+  width: 30px;
+  height: 30px;
+}
+
+.dark-mode #themeToggle {
+  filter: invert(100%);
+}
+
+#themeToggle:hover{
+  filter: invert(70%);
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  background: var(--container-bg);
+  color: var(--text-color);
+}
+
+#validationText {
+  color: red;
+  width: 100%;
+  text-align: left;
+  margin: 5px 0px 10px 3px;
+  font-size: 14px;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: var(--button-bg);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+}
+
+button:hover {
+  background-color: var(--button-hover);
+}

@@ -2,15 +2,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Morse Code Sender</title>
-
+  <title>Morse Encoder</title>
   <script defer src="script.js" type="module"></script>
-  
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="container">
-    <h1>Send Morse Code</h1>
+    <span id="titleSpan">
+      <h1 id="title">Morse Encoder</h1>
+      <img src="/command_side/images/dark_mode_icon.png" alt="" id="themeToggle">
+    </span>
     <input type="text" id="textInput" placeholder="Enter your message here">
     <p id="validationText" style="visibility: hidden;">.</p>
     <button id="sendBtn">Send</button>
