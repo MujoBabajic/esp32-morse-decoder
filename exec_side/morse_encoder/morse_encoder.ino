@@ -13,7 +13,6 @@ unsigned long lastCheckTime = 0;
 String lastMessage = "";  // Store the last processed message
 
 #define BUZZER_PIN 12
-#define RED_DIODE_PIN 25
 #define GREEN_DIODE_PIN 13
 #define BUZZER_FREQ 800  // Hz
 #define SHORT_BEEP 20  // Milliseconds
@@ -145,7 +144,6 @@ void setup() {
   Serial.begin(115200);
 
   pinMode(BUZZER_PIN, OUTPUT);
-  pinMode(RED_DIODE_PIN, OUTPUT);
   pinMode(GREEN_DIODE_PIN, OUTPUT);
 
   WiFi.begin(SSID, PASSWORD);
