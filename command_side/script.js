@@ -74,6 +74,7 @@ function insertData() {
   })
     .then(() => {
       validationText.style.visibility = "hidden";
+      textInput.value="";
       alert("Data sent successfully");
     })
     .catch((error) => {
